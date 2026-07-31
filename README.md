@@ -171,6 +171,9 @@ docker-compose exec app php artisan migrate --seed
 
 ```
 app/
+├── Config/
+│   ├── CustomApiRequest.php
+│   ├── helpers.php
 ├── Enums/
 │   ├── ProjectStatus.php
 │   ├── TaskPriority.php
@@ -182,12 +185,15 @@ app/
 │   │   ├── ProjectController.php
 │   │   └── TaskController.php
 │   ├── Requests/
-│   │   ├── LoginRequest.php
-│   │   ├── RegisterRequest.php
-│   │   ├── StoreProjectRequest.php
-│   │   ├── UpdateProjectRequest.php
-│   │   ├── StoreTaskRequest.php
-│   │   └── UpdateTaskRequest.php
+|   |   ├── Auth/
+│   │   |   ├── LoginRequest.php
+│   │   |   └── RegisterRequest.php
+|   |   ├── Projects/
+│   │   |   ├── StoreProjectRequest.php
+│   │   |   └── UpdateProjectRequest.php
+|   |   └── Tasks/
+│   │       ├── StoreTaskRequest.php
+│   │       └── UpdateTaskRequest.php
 │   └── Resources/
 │       ├── ProjectResource.php
 │       ├── TaskResource.php
@@ -241,7 +247,7 @@ php artisan tasks:check-overdue
 
 After seeding:
 - **Email:** `test@example.com`
-- **Password:** `password`
+- **Password:** `12345678`
 
 ## Postman Collection
 

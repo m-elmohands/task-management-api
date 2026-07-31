@@ -5,7 +5,7 @@ namespace App\Http\Requests\Auth;
 use App\Config\CustomApiRequest;
 use Illuminate\Contracts\Validation\ValidationRule;
 
-class RegisterRequest extends CustomApiRequest
+class LoginRequest extends CustomApiRequest
 {
     /**
      * Get the validation rules that apply to the request.
@@ -15,9 +15,8 @@ class RegisterRequest extends CustomApiRequest
     public function rules(): array
     {
         return [
-            'name' => 'required|string|max:255',
-            'email' => 'required|string|email|max:255|unique:users',
-            'password' => 'required|string|min:8|confirmed',
+            'email' => 'required|string|email',
+            'password' => 'required|string',
         ];
     }
 }

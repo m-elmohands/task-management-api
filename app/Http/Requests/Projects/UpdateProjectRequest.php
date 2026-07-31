@@ -1,11 +1,11 @@
 <?php
 
-namespace App\Http\Requests\Auth;
+namespace App\Http\Requests\Projects;
 
 use App\Config\CustomApiRequest;
 use Illuminate\Contracts\Validation\ValidationRule;
 
-class RegisterRequest extends CustomApiRequest
+class UpdateProjectRequest extends CustomApiRequest
 {
     /**
      * Get the validation rules that apply to the request.
@@ -15,9 +15,9 @@ class RegisterRequest extends CustomApiRequest
     public function rules(): array
     {
         return [
-            'name' => 'required|string|max:255',
-            'email' => 'required|string|email|max:255|unique:users',
-            'password' => 'required|string|min:8|confirmed',
+            'name' => 'sometimes|required|string|max:255',
+            'description' => 'nullable|string',
+            'status' => 'sometimes|required|in:active,completed,archived',
         ];
     }
 }

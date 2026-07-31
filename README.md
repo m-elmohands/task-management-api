@@ -1,6 +1,6 @@
 # Task Management API
 
-A RESTful API for a Task Management System built with Laravel 11. This project demonstrates clean architecture, repository pattern, service layer, API resources, form request validation, Sanctum authentication, soft deletes, and queue jobs.
+A RESTful API for a Task Management System built with Laravel 12. This project demonstrates clean architecture, repository pattern, service layer, API resources, form request validation, Sanctum authentication, soft deletes, and queue jobs.
 
 ## Features
 
@@ -18,7 +18,7 @@ A RESTful API for a Task Management System built with Laravel 11. This project d
 
 ## Tech Stack
 
-- Laravel 11+
+- Laravel 12+
 - PHP 8.2+
 - MySQL 8.0
 - Redis (for queues)
@@ -38,7 +38,7 @@ A RESTful API for a Task Management System built with Laravel 11. This project d
 
 1. Clone the repository:
 ```bash
-git clone <repository-url>
+git clone https://github.com/m-elmohands/task-management-api.git
 cd task-management-api
 ```
 

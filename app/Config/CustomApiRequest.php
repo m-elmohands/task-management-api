@@ -15,18 +15,4 @@ class CustomApiRequest extends FormRequest
     {
         return true;
     }
-
-    /**
-     * Setup custom validation for request error.
-     */
-    protected function failedValidation(Validator $validator)
-    {
-        throw new HttpResponseException(
-            apiResponse(
-                $validator->errors(),
-                'In-valid Inputs',
-                422
-            )
-        );
-    }
 }

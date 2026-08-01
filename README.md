@@ -82,92 +82,119 @@ php artisan db:seed
 php artisan serve
 ```
 
-### Docker Setup
+9. Access the API at `http://localhost:8000`
 
-1. Build and start containers:
+### Docker Setup (optional)
+
+1. Install Docker [From Docker Site](https://docs.docker.com/get-started/get-docker/)
+
+2. Build and start containers:
 ```bash
 docker-compose up -d --build
 ```
 
-2. Install dependencies inside the container:
+3. Install dependencies inside the container:
 ```bash
 docker-compose exec app composer install
 ```
 
-3. Copy environment and generate key:
+4. Copy environment and generate key:
 ```bash
 docker-compose exec app cp .env.example .env
 docker-compose exec app php artisan key:generate
 ```
 
-4. Run migrations and seeders:
+5. Run migrations and seeders:
 ```bash
 docker-compose exec app php artisan migrate --seed
 ```
 
-5. Access the API at `http://localhost:8000`
+6. Access the API at `http://localhost:8080`
 
-## API Documentation
+---
 
-### Authentication Endpoints
+## Swagger / OpenAPI Documentation
 
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| POST | `/api/register` | Register a new user |
-| POST | `/api/login` | Login and get token |
-| POST | `/api/logout` | Logout (requires auth) |
+This project includes interactive API documentation powered by **Swagger UI** and **OpenAPI 3.0**.
 
-### Project Endpoints (Auth Required)
+### Swagger Configuration
 
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET | `/api/projects` | List all projects (paginated) |
-| POST | `/api/projects` | Create a new project |
-| GET | `/api/projects/{id}` | View a specific project |
-| PUT | `/api/projects/{id}` | Update a project |
-| DELETE | `/api/projects/{id}` | Delete a project (soft delete) |
+The Swagger documentation is configured via the `config/l5-swagger.php` file. Key settings:
 
-**Query Parameters for List:**
-- `status` - Filter by status: `active`, `completed`, `archived`
-- `page` - Pagination page number
+| Setting | Value | Description |
+|---------|-------|-------------|
+| `api` | `api/documentation` | URL path for Swagger UI |
+| `docs` | `api/docs` | URL path for raw JSON spec |
+| `annotations` | `app/` | Scanned for OpenAPI annotations |
 
-### Task Endpoints (Auth Required)
+### Generating the Documentation
 
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET | `/api/projects/{project}/tasks` | List tasks for a project |
-| POST | `/api/projects/{project}/tasks` | Create a task |
-| GET | `/api/projects/{project}/tasks/{task}` | View a task |
-| PUT | `/api/projects/{project}/tasks/{task}` | Update a task |
-| DELETE | `/api/projects/{project}/tasks/{task}` | Delete a task (soft delete) |
+If you modify API annotations or the OpenAPI spec, regenerate the docs:
 
-**Query Parameters for List:**
-- `status` - Filter by status: `todo`, `in_progress`, `done`
-- `priority` - Filter by priority: `low`, `medium`, `high`
-- `search` - Search by title (partial match)
-- `page` - Pagination page number
-
-### Dashboard Endpoint (Auth Required)
-
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET | `/api/dashboard` | Get dashboard statistics |
-
-**Response:**
-```json
-{
-  "data": {
-    "total_projects": 10,
-    "active_projects": 7,
-    "total_tasks": 50,
-    "completed_tasks": 20,
-    "pending_tasks": 25,
-    "overdue_tasks": 5
-  }
-}
+```bash
+php artisan l5-swagger:generate
 ```
 
-## Project Structure
+### OpenAPI Specification File
+
+The raw OpenAPI 3.0 YAML specification is available at:
+
+```
+http://localhost:8000/api/docs
+```
+
+Or import the `swagger.yaml` file directly into:
+- [Swagger Editor](https://editor.swagger.io/)
+- Postman (Import > File)
+- Insomnia
+- Any OpenAPI-compatible tool
+
+### Authenticating in Swagger UI
+
+1. Click the **Authorize** button (🔒) at the top right of the Swagger UI
+2. Enter your token in the format: `Bearer YOUR_TOKEN_HERE`
+3. Click **Authorize** and close the modal
+4. All protected endpoints will now include the token in requests
+
+### Swagger Annotations (Optional)
+
+If you prefer annotation-based docs over the YAML file, install L5-Swagger and add PHPDoc annotations to your controllers:
+
+```bash
+composer require darkaonline/l5-swagger
+php artisan vendor:publish --provider "L5Swagger\L5SwaggerServiceProvider"
+```
+
+Example annotation in a controller:
+
+```php
+/**
+ * @OA\Get(
+ *     path="/api/projects",
+ *     summary="List all projects",
+ *     tags={"Projects"},
+ *     security={{"bearerAuth": {}}},
+ *     @OA\Parameter(name="status", in="query", @OA\Schema(type="string", enum={"active", "completed", "archived"})),
+ *     @OA\Response(response=200, description="List of projects", @OA\JsonContent(ref="#/components/schemas/PaginatedProjects"))
+ * )
+ */
+public function index(Request $request): JsonResponse
+```
+
+### Access the Documentation
+
+Once the application is running, open your browser and navigate to:
+
+```
+http://localhost:8000/api/documentation
+```
+
+You will see an interactive Swagger UI where you can:
+- Browse all available endpoints
+- View request/response schemas with examples
+- Test endpoints directly from the browser
+- Authenticate with your Bearer token to access protected routes
+---
 
 ```
 app/
@@ -255,4 +282,4 @@ Import `Task_Management_API_Postman_Collection.json` into Postman. Set the `base
 
 ## License
 
-This project is for assessment purposes.
+This project is for assessment purposes `m-elmohands`.

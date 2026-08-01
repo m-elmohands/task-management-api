@@ -1,0 +1,946 @@
+openapi: 3.0.3
+info:
+  title: Task Management API
+  description: |
+    A RESTful API for managing projects and tasks built with Laravel 11.
+
+    ## Authentication
+    All protected endpoints require a Bearer token in the `Authorization` header.
+
+    1. Register or Login to obtain a token
+    2. Include the token in subsequent requests: `Authorization: Bearer {token}`
+
+    ## Features
+    - Project management with status tracking
+    - Task management with priority, status, and due dates
+    - Dashboard statistics
+    - Filtering, searching, and pagination
+  version: 1.0.0
+  contact:
+    name: API Support
+    email: support@example.com
+
+servers:
+  - url: http://localhost:8000/api
+    description: Local development server
+  - url: https://api.taskmanager.com/api
+    description: Production server
+
+paths:
+  /register:
+    post:
+      tags:
+        - Authentication
+      summary: Register a new user
+      description: Create a new user account and return an authentication token.
+      operationId: registerUser
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterRequest'
+            examples:
+              example:
+                summary: Sample registration
+                value:
+                  name: "John Doe"
+                  email: "john@example.com"
+                  password: "password123"
+                  password_confirmation: "password123"
+      responses:
+        '201':
+          description: User registered successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+
+  /login:
+    post:
+      tags:
+        - Authentication
+      summary: User login
+      description: Authenticate a user and return an access token.
+      operationId: loginUser
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+            examples:
+              example:
+                summary: Sample login
+                value:
+                  email: "john@example.com"
+                  password: "password123"
+      responses:
+        '200':
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        '401':
+          description: Invalid credentials
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                message: "Invalid credentials."
+        '422':
+          $ref: '#/components/responses/ValidationError'
+
+  /logout:
+    post:
+      tags:
+        - Authentication
+      summary: User logout
+      description: Revoke the current authentication token.
+      operationId: logoutUser
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Logged out successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessMessage'
+              example:
+                message: "Logged out successfully."
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /projects:
+    get:
+      tags:
+        - Projects
+      summary: List all projects
+      description: Retrieve a paginated list of the authenticated user's projects with optional status filtering.
+      operationId: listProjects
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: status
+          in: query
+          description: Filter projects by status
+          required: false
+          schema:
+            type: string
+            enum: [active, completed, archived]
+          example: active
+        - name: page
+          in: query
+          description: Page number for pagination
+          required: false
+          schema:
+            type: integer
+            default: 1
+      responses:
+        '200':
+          description: List of projects
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedProjects'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+    post:
+      tags:
+        - Projects
+      summary: Create a new project
+      description: Create a new project for the authenticated user.
+      operationId: createProject
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StoreProjectRequest'
+            examples:
+              example:
+                summary: Sample project creation
+                value:
+                  name: "Website Redesign"
+                  description: "Redesign the company website with modern UI"
+                  status: "active"
+      responses:
+        '201':
+          description: Project created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProjectResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+
+  /projects/{id}:
+    get:
+      tags:
+        - Projects
+      summary: View a project
+      description: Retrieve details of a specific project by ID.
+      operationId: getProject
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Project ID
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Project details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProjectSingleResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    put:
+      tags:
+        - Projects
+      summary: Update a project
+      description: Update an existing project's details.
+      operationId: updateProject
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Project ID
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateProjectRequest'
+            examples:
+              example:
+                summary: Sample project update
+                value:
+                  name: "Website Redesign - Phase 2"
+                  status: "completed"
+      responses:
+        '200':
+          description: Project updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProjectResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+
+    delete:
+      tags:
+        - Projects
+      summary: Delete a project
+      description: Soft delete a project and all its associated tasks.
+      operationId: deleteProject
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Project ID
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Project deleted successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessMessage'
+              example:
+                message: "Project deleted successfully."
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /projects/{project}/tasks:
+    get:
+      tags:
+        - Tasks
+      summary: List tasks for a project
+      description: |
+        Retrieve a paginated list of tasks for a specific project.
+        Supports filtering by status, priority, and searching by title.
+      operationId: listTasks
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: project
+          in: path
+          required: true
+          description: Project ID
+          schema:
+            type: integer
+        - name: status
+          in: query
+          description: Filter by task status
+          required: false
+          schema:
+            type: string
+            enum: [todo, in_progress, done]
+          example: todo
+        - name: priority
+          in: query
+          description: Filter by task priority
+          required: false
+          schema:
+            type: string
+            enum: [low, medium, high]
+          example: high
+        - name: search
+          in: query
+          description: Search by task title (partial match)
+          required: false
+          schema:
+            type: string
+          example: design
+        - name: page
+          in: query
+          description: Page number for pagination
+          required: false
+          schema:
+            type: integer
+            default: 1
+      responses:
+        '200':
+          description: List of tasks
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedTasks'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    post:
+      tags:
+        - Tasks
+      summary: Create a new task
+      description: Create a new task within a specific project.
+      operationId: createTask
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: project
+          in: path
+          required: true
+          description: Project ID
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StoreTaskRequest'
+            examples:
+              example:
+                summary: Sample task creation
+                value:
+                  title: "Design Homepage"
+                  description: "Create wireframes and mockups for the homepage"
+                  priority: "high"
+                  status: "todo"
+                  due_date: "2026-08-15"
+      responses:
+        '201':
+          description: Task created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TaskResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+
+  /projects/{project}/tasks/{task}:
+    get:
+      tags:
+        - Tasks
+      summary: View a task
+      description: Retrieve details of a specific task.
+      operationId: getTask
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: project
+          in: path
+          required: true
+          description: Project ID
+          schema:
+            type: integer
+        - name: task
+          in: path
+          required: true
+          description: Task ID
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Task details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TaskSingleResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    put:
+      tags:
+        - Tasks
+      summary: Update a task
+      description: Update an existing task's details.
+      operationId: updateTask
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: project
+          in: path
+          required: true
+          description: Project ID
+          schema:
+            type: integer
+        - name: task
+          in: path
+          required: true
+          description: Task ID
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateTaskRequest'
+            examples:
+              example:
+                summary: Sample task update
+                value:
+                  status: "in_progress"
+                  priority: "medium"
+      responses:
+        '200':
+          description: Task updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TaskResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+
+    delete:
+      tags:
+        - Tasks
+      summary: Delete a task
+      description: Soft delete a specific task.
+      operationId: deleteTask
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: project
+          in: path
+          required: true
+          description: Project ID
+          schema:
+            type: integer
+        - name: task
+          in: path
+          required: true
+          description: Task ID
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Task deleted successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessMessage'
+              example:
+                message: "Task deleted successfully."
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /dashboard:
+    get:
+      tags:
+        - Dashboard
+      summary: Dashboard statistics
+      description: |
+        Retrieve aggregated statistics for the authenticated user's projects and tasks.
+        Includes total counts, active projects, completed/pending/overdue tasks.
+      operationId: getDashboard
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Dashboard statistics
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DashboardResponse'
+              example:
+                data:
+                  total_projects: 10
+                  active_projects: 7
+                  total_tasks: 50
+                  completed_tasks: 20
+                  pending_tasks: 25
+                  overdue_tasks: 5
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Enter your Sanctum token in the format `Bearer {token}`
+
+  schemas:
+    # Request Schemas
+    RegisterRequest:
+      type: object
+      required:
+        - name
+        - email
+        - password
+        - password_confirmation
+      properties:
+        name:
+          type: string
+          maxLength: 255
+          example: "John Doe"
+        email:
+          type: string
+          format: email
+          maxLength: 255
+          example: "john@example.com"
+        password:
+          type: string
+          format: password
+          minLength: 8
+          example: "password123"
+        password_confirmation:
+          type: string
+          format: password
+          example: "password123"
+
+    LoginRequest:
+      type: object
+      required:
+        - email
+        - password
+      properties:
+        email:
+          type: string
+          format: email
+          example: "john@example.com"
+        password:
+          type: string
+          format: password
+          example: "password123"
+
+    StoreProjectRequest:
+      type: object
+      required:
+        - name
+        - status
+      properties:
+        name:
+          type: string
+          maxLength: 255
+          example: "Website Redesign"
+        description:
+          type: string
+          nullable: true
+          example: "Redesign the company website with modern UI"
+        status:
+          type: string
+          enum: [active, completed, archived]
+          example: "active"
+
+    UpdateProjectRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          maxLength: 255
+          example: "Website Redesign - Phase 2"
+        description:
+          type: string
+          nullable: true
+          example: "Updated project description"
+        status:
+          type: string
+          enum: [active, completed, archived]
+          example: "completed"
+
+    StoreTaskRequest:
+      type: object
+      required:
+        - title
+        - priority
+        - status
+        - due_date
+      properties:
+        title:
+          type: string
+          maxLength: 255
+          example: "Design Homepage"
+        description:
+          type: string
+          nullable: true
+          example: "Create wireframes and mockups for the homepage"
+        priority:
+          type: string
+          enum: [low, medium, high]
+          example: "high"
+        status:
+          type: string
+          enum: [todo, in_progress, done]
+          example: "todo"
+        due_date:
+          type: string
+          format: date
+          example: "2026-08-15"
+
+    UpdateTaskRequest:
+      type: object
+      properties:
+        title:
+          type: string
+          maxLength: 255
+          example: "Design Homepage - Updated"
+        description:
+          type: string
+          nullable: true
+          example: "Updated description"
+        priority:
+          type: string
+          enum: [low, medium, high]
+          example: "medium"
+        status:
+          type: string
+          enum: [todo, in_progress, done]
+          example: "in_progress"
+        due_date:
+          type: string
+          format: date
+          example: "2026-08-20"
+
+    # Response Schemas
+    User:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        name:
+          type: string
+          example: "John Doe"
+        email:
+          type: string
+          example: "john@example.com"
+        created_at:
+          type: string
+          format: date-time
+          example: "2026-07-31T10:00:00.000000Z"
+
+    Project:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        name:
+          type: string
+          example: "Website Redesign"
+        description:
+          type: string
+          nullable: true
+          example: "Redesign the company website"
+        status:
+          type: string
+          enum: [active, completed, archived]
+          example: "active"
+        tasks_count:
+          type: integer
+          nullable: true
+          example: 10
+        created_at:
+          type: string
+          format: date-time
+          example: "2026-07-31T10:00:00.000000Z"
+        updated_at:
+          type: string
+          format: date-time
+          example: "2026-07-31T12:00:00.000000Z"
+
+    Task:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        project_id:
+          type: integer
+          example: 1
+        title:
+          type: string
+          example: "Design Homepage"
+        description:
+          type: string
+          nullable: true
+          example: "Create wireframes and mockups"
+        priority:
+          type: string
+          enum: [low, medium, high]
+          example: "high"
+        status:
+          type: string
+          enum: [todo, in_progress, done]
+          example: "todo"
+        due_date:
+          type: string
+          format: date
+          example: "2026-08-15"
+        is_overdue:
+          type: boolean
+          example: false
+        created_at:
+          type: string
+          format: date-time
+          example: "2026-07-31T10:00:00.000000Z"
+        updated_at:
+          type: string
+          format: date-time
+          example: "2026-07-31T12:00:00.000000Z"
+
+    AuthResponse:
+      type: object
+      properties:
+        message:
+          type: string
+          example: "User registered successfully."
+        user:
+          $ref: '#/components/schemas/User'
+        token:
+          type: string
+          example: "1|laravel_sanctum_token_here"
+
+    ProjectResponse:
+      type: object
+      properties:
+        message:
+          type: string
+          example: "Project created successfully."
+        data:
+          $ref: '#/components/schemas/Project'
+
+    ProjectSingleResponse:
+      type: object
+      properties:
+        data:
+          $ref: '#/components/schemas/Project'
+
+    TaskResponse:
+      type: object
+      properties:
+        message:
+          type: string
+          example: "Task created successfully."
+        data:
+          $ref: '#/components/schemas/Task'
+
+    TaskSingleResponse:
+      type: object
+      properties:
+        data:
+          $ref: '#/components/schemas/Task'
+
+    DashboardResponse:
+      type: object
+      properties:
+        data:
+          type: object
+          properties:
+            total_projects:
+              type: integer
+              example: 10
+            active_projects:
+              type: integer
+              example: 7
+            total_tasks:
+              type: integer
+              example: 50
+            completed_tasks:
+              type: integer
+              example: 20
+            pending_tasks:
+              type: integer
+              example: 25
+            overdue_tasks:
+              type: integer
+              example: 5
+
+    SuccessMessage:
+      type: object
+      properties:
+        message:
+          type: string
+
+    ErrorResponse:
+      type: object
+      properties:
+        message:
+          type: string
+          example: "Invalid credentials."
+
+    ValidationError:
+      type: object
+      properties:
+        message:
+          type: string
+          example: "Validation failed."
+        errors:
+          type: object
+          additionalProperties:
+            type: array
+            items:
+              type: string
+          example:
+            email: ["The email field is required."]
+            password: ["The password must be at least 8 characters."]
+
+    PaginationMeta:
+      type: object
+      properties:
+        current_page:
+          type: integer
+          example: 1
+        from:
+          type: integer
+          example: 1
+        last_page:
+          type: integer
+          example: 3
+        per_page:
+          type: integer
+          example: 15
+        to:
+          type: integer
+          example: 15
+        total:
+          type: integer
+          example: 45
+
+    PaginationLinks:
+      type: object
+      properties:
+        first:
+          type: string
+          example: "http://localhost:8000/api/projects?page=1"
+        last:
+          type: string
+          example: "http://localhost:8000/api/projects?page=3"
+        prev:
+          type: string
+          nullable: true
+          example: null
+        next:
+          type: string
+          nullable: true
+          example: "http://localhost:8000/api/projects?page=2"
+
+    PaginatedProjects:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/Project'
+        links:
+          $ref: '#/components/schemas/PaginationLinks'
+        meta:
+          $ref: '#/components/schemas/PaginationMeta'
+
+    PaginatedTasks:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/Task'
+        links:
+          $ref: '#/components/schemas/PaginationLinks'
+        meta:
+          $ref: '#/components/schemas/PaginationMeta'
+
+  responses:
+    Unauthorized:
+      description: Unauthenticated
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            message: "Unauthenticated."
+
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            message: "Project not found."
+
+    ValidationError:
+      description: Validation failed
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ValidationError'
